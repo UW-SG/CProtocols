@@ -29,11 +29,18 @@ public class RPCClient {
 	public static void main(String args[]) 
     {		
 		logger.debug("--------RPC PROCESS STARTED---------");		
-						
+	
 		String host = null;
 		int port = 1099;
 		if(args.length > 0)host = args[0];
-		if(args.length > 1)port = Integer.parseInt(args[1]);
+		try{
+			if(args.length > 1)port = Integer.parseInt(args[1]);
+		}catch(NumberFormatException e)
+        {        	
+        	logger.error("RPCClient exception: " + e.getMessage()); 
+        	System.out.println("Invalid Port");
+        	throw e;
+        }
 		
 		logger.debug("Host:"+host);
 		logger.debug("Port:"+port);		
@@ -47,7 +54,7 @@ public class RPCClient {
         	
         	RPCClient client = new RPCClient();
         	client.process(host, port);
-        } 
+        }         
         catch (Exception e) 
         { 
         	logger.error("RPCClient exception: " + e.getMessage()); 
