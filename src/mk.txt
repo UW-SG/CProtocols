@@ -1,0 +1,11 @@
+JFLAGS = -g
+JC = javac
+.SUFFIXES: .java .class
+.java.class:
+	$(JC) $(JFLAGS) $*.java
+
+CLASSES = ServerMain.java
+
+default: classes
+
+classes: $(CLASSES:.java=.class)

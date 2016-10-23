@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<!-- <!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" 
+	"http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd"> -->
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"
+	debug="true" threshold="all">
+	
+	<appender name="rpcClientLog" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/RPCClient.log" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />        
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d L=%p T=%t %c:%L %M()%m%n%n" />
+		</layout>
+	</appender>
+	
+	<appender name="rpcClientStats" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/RPCClientStatistics.txt" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />        
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%m%n" />
+        </layout>
+	</appender>
+	
+	<appender name="rpcServerLog" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/RPCServer.log" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />        
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d L=%p T=%t %c:%L %M()%m%n%n" />
+		</layout>
+	</appender>
+
+   <appender name="udpLog" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/UDPClient.txt" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%m%n" />
+        </layout>
+	</appender>
+
+	<appender name="udpClientStats" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/UDPClientStatistics.txt" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%m%n" />
+        </layout>
+	</appender>
+
+    <appender name="udpServerLog" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="File" value="logs/UDPServerLog.txt" />
+        <param name="DatePattern" value="'.'yyyy-MM-dd" />
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%m%n" />
+        </layout>
+    </appender>
+    
+	<!-- Console Appender -->
+	<appender name="default.console" class="org.apache.log4j.ConsoleAppender">
+        <param name="target" value="System.out" />
+        <param name="threshold" value="debug" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{ISO8601} %-5p [%c{1}] - %m%n" />
+        </layout>
+    </appender>	
+	
+	<logger name="RPC_CLIENT_LOG" additivity="false">		
+		<level value="debug" />
+		<appender-ref ref="rpcClientLog" />		
+	</logger>
+	
+	<logger name="RPC_CLIENT_STATISTICS_LOG" additivity="false">		
+		<level value="info" />
+		<appender-ref ref="rpcClientStats" />		
+	</logger>
+	
+	<logger name="RPC_SERVER_LOG" additivity="false">		
+		<level value="debug" />
+		<appender-ref ref="rpcServerLog" />		
+	</logger>
+	
+	<logger name="UDP_CLIENT_STATISTICS_LOG" additivity="false">
+		<level value="info" />
+		<appender-ref ref="udpClientStats" />
+	</logger>
+
+    <logger name="UDP_CLIENT_LOG" additivity="false">
+        <level value="info" />
+        <appender-ref ref="udpLog" />
+    </logger>
+
+    <logger name="UDP_SERVER_LOG" additivity="false">
+        <level value="info" />
+        <appender-ref ref="udpServerLog" />
+    </logger>
+    
+	<!-- ROOT LOGGER -->
+	<root>
+		<priority value="debug" />				
+		<appender-ref ref="udpLog" />		
+		<appender-ref ref="default.console" />
+	</root>
+</log4j:configuration>

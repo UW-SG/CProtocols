@@ -1,0 +1,8 @@
+PUT Ram 42
+PUT Laxman 99
+PUT Shiva 98
+PUT Ravan 22
+PUT Ganesh 87
+GET Ram
+GET Laxman
+DELETE Ganesh
