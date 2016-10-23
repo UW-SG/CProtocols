@@ -241,15 +241,22 @@ public class RPCClient {
 			++i;			
 		}
 		
-		long avgGetTime = getTotalTime/getRequestCount;
-		long avgPutTime = putTotalTime/putRequestCount;
-		long avgDelTime = delTotalTime/delRequestCount;
+		long avgGetTime = 0, avgPutTime = 0, avgDelTime = 0;
 		
 		//System.out.println("count = ===="+getRequestCount+"----"+putRequestCount+"-----"+delRequestCount);
 		
-		if(getRequestCount>0)statsLogger.info("Average Compute time for RPC GET request:"+avgGetTime+" ms");
-		if(putRequestCount>0)statsLogger.info("Average Compute time for RPC PUT request:"+avgPutTime+" ms");
-		if(delRequestCount>0)statsLogger.info("Average Compute time for RPC DELETE request:"+avgDelTime+" ms");	
+		if(getRequestCount>0){
+			avgGetTime = getTotalTime/getRequestCount;
+			statsLogger.info("Average Compute time for RPC GET request:"+avgGetTime+" ms");
+		}
+		if(putRequestCount>0){
+			avgPutTime = putTotalTime/putRequestCount;
+			statsLogger.info("Average Compute time for RPC PUT request:"+avgPutTime+" ms");
+		}
+		if(delRequestCount>0){
+			avgDelTime = delTotalTime/delRequestCount;
+			statsLogger.info("Average Compute time for RPC DELETE request:"+avgDelTime+" ms");	
+		}
 		
 		
 		//Computing Standard Variation		
@@ -261,8 +268,7 @@ public class RPCClient {
 		
 			Stats statsObj = (Stats)statsList.get(i);
 			switch (statsObj.getOperation()){
-				case "GET":		sqGetTDiff += Math.pow(statsObj.getTime() - avgGetTime, 2);
-								//System.out.println("sqGetTDiff--"+sqGetTDiff);
+				case "GET":		sqGetTDiff += Math.pow(statsObj.getTime() - avgGetTime, 2);								
 								break;
 				case "PUT":		sqPutTDiff += Math.pow(statsObj.getTime() - avgPutTime, 2);
 								break;
@@ -272,13 +278,13 @@ public class RPCClient {
 			++i;			
 		}
 		
-		long getGetVar = sqGetTDiff/getRequestCount;
+		/*long getGetVar = sqGetTDiff/getRequestCount;
 		long getPutVar = sqPutTDiff/putRequestCount;
-		long getDelVar = sqDelTDiff/delRequestCount;		
+		long getDelVar = sqDelTDiff/delRequestCount;		*/
 		
-		if(getRequestCount>0)statsLogger.info("Standard Deviation for RPC GET request:"+Math.sqrt(getGetVar)+" ms");
-		if(putRequestCount>0)statsLogger.info("Standard Deviation for RPC PUT request:"+Math.sqrt(getPutVar)+" ms");
-		if(delRequestCount>0)statsLogger.info("Standard Deviation for RPC DELETE request:"+Math.sqrt(getDelVar)+" ms");		
+		if(getRequestCount>0)statsLogger.info("Standard Deviation for RPC GET request:"+Math.sqrt(sqGetTDiff/getRequestCount)+" ms");
+		if(putRequestCount>0)statsLogger.info("Standard Deviation for RPC PUT request:"+Math.sqrt(sqPutTDiff/putRequestCount)+" ms");
+		if(delRequestCount>0)statsLogger.info("Standard Deviation for RPC DELETE request:"+Math.sqrt(sqDelTDiff/delRequestCount)+" ms");		
 		
 		statsLogger.info("---------PERFORMANCE ANALYSIS COMPLETE---------");
 		
