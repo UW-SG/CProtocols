@@ -4,7 +4,7 @@ import com.utility.Operation;
 import com.utility.DataPacket;
 import com.utility.OperationUtils;
 import com.uw.adc.rmi.model.Stats;
-import com.uw.adc.rmi.util.Constants;
+import com.utility.UDPConstants;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -14,8 +14,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.uw.adc.rmi.util.Constants.LOGGER;
 
 /**
  * Created by Anurita on 10/16/2016.
@@ -69,7 +67,7 @@ public class UDPClient {
             while (currentAttempt <= MAX_RETRIES && !completed) {
                 if (currentAttempt > 0) {
                     String msg = String.format("Retry attempt #%d for request: %s", currentAttempt, dataPacket);
-                    LOGGER.info(msg);
+                    UDPConstants.LOGGER.info(msg);
                     System.out.println(msg);
                 }
                 OperationUtils.sendPacket(dataPacket, destAddr, destPort, clientSocket);
@@ -78,18 +76,18 @@ public class UDPClient {
                     completed = true;
                 } catch (Exception ex) {
                     String msg = "Server timed-out for request: " + dataPacket;
-                    LOGGER.error(msg);
+                    UDPConstants.LOGGER.error(msg);
                     System.out.println(msg);
                     currentAttempt++;
                 }
             }
             if (!completed) {
                 String msg = "Server timed-out even after 3 retries. Could not complete request: " + dataPacket;
-                LOGGER.error(msg);
+                UDPConstants.LOGGER.error(msg);
                 System.out.println(msg);
             }
         } catch (Exception e) {
-            Constants.LOGGER.error(e);
+            UDPConstants.LOGGER.error(e);
             throw new RuntimeException(e);
         }
     }

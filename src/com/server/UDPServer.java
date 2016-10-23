@@ -11,7 +11,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-import static com.uw.adc.rmi.util.Constants.UDP_SERVER_LOGGER;
+import static com.utility.UDPConstants.UDP_SERVER_LOGGER;
 
 /**
  * Created by Anurita on 10/16/2016.

@@ -1,7 +1,6 @@
 package com.utility;
 
 import com.handler.UDPRequestHandler;
-import com.uw.adc.rmi.util.Constants;
 
 import java.io.*;
 import java.net.DatagramPacket;
@@ -24,14 +23,14 @@ public class OperationUtils {
         switch (op) {
 
             case PUT:
-                Constants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
+                UDPConstants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
                         simpleDateFormat.format((new Date()).getTime())
                         , handler.getClientAddr().toString(), (handler.getClientPort()).toString(),
                         op.toString(), dataPacket.getData()));
                 handler.handlePut(dataPacket);
                 break;
             case GET:
-                Constants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
+                UDPConstants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
                         simpleDateFormat.format((new Date()).getTime())
                         , handler.getClientAddr().toString(),
                         (handler.getClientPort()).toString(),
@@ -40,14 +39,14 @@ public class OperationUtils {
                 handler.handleGet(dataPacket);
                 break;
             case DELETE:
-                Constants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
+                UDPConstants.UDP_SERVER_LOGGER.info(String.format("%s : Received request from : %s : %s to do %s ( %s )",
                         simpleDateFormat.format((new Date()).getTime())
                         , handler.getClientAddr().toString(), (handler.getClientPort()).toString(),
                         op.toString(), dataPacket.getData()));
                 handler.handleDelete(dataPacket);
                 break;
             case OTHER:
-                Constants.UDP_SERVER_LOGGER.info(String.format("%s : Received unsolicited request from : %s : %s "+
+                UDPConstants.UDP_SERVER_LOGGER.info(String.format("%s : Received unsolicited request from : %s : %s "+
                                 "of length %d",
                         simpleDateFormat.format((new Date()).getTime())
                         , handler.getClientAddr().toString(), (handler.getClientPort()).toString(),
@@ -101,7 +100,7 @@ public class OperationUtils {
             byteArrayOutputStream.close();
             return byteArrayOutputStream.toByteArray();
         } catch (Exception ex) {
-            Constants.UDP_SERVER_LOGGER.error(ex);
+            UDPConstants.UDP_SERVER_LOGGER.error(ex);
             throw new RuntimeException(ex);
         }
     }
@@ -125,7 +124,7 @@ public class OperationUtils {
             byteArrayOutputStream.close();
             return byteArrayOutputStream.toByteArray();
         } catch (Exception ex) {
-            Constants.UDP_SERVER_LOGGER.error(ex);
+            UDPConstants.UDP_SERVER_LOGGER.error(ex);
             throw new RuntimeException(ex);
         }
     }
@@ -160,7 +159,7 @@ public class OperationUtils {
             DatagramPacket outputDatagramPacket = new DatagramPacket(output, output.length, destAddr, destPort);
             sourceSocket.send(outputDatagramPacket);
         } catch (Exception e) {
-            Constants.UDP_SERVER_LOGGER.error(e);
+            UDPConstants.UDP_SERVER_LOGGER.error(e);
             throw new RuntimeException(e);
         }
     }

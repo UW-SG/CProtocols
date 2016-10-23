@@ -2,14 +2,15 @@ package com.main;
 
 import com.utility.Operation;
 import com.client.UDPClient;
+import com.utility.UDPConstants;
 import com.uw.adc.rmi.model.Stats;
-import com.uw.adc.rmi.util.Constants;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.List;
 
-import static com.uw.adc.rmi.util.Constants.UDP_STATS_LOGGER;
+import static com.utility.UDPConstants.UDP_STATS_LOGGER;
+
 
 /**
  * Created by Anurita on 10/20/2016.
@@ -31,7 +32,7 @@ public class UDPClientMain {
             }
             UDPClientMain.computePerformance(udpClient);
         } catch (Exception e) {
-            Constants.LOGGER.error("Client error: " + e);
+            com.utility.UDPConstants.LOGGER.error("Client error: " + e);
             throw new RuntimeException(e);
         }
     }
@@ -42,7 +43,7 @@ public class UDPClientMain {
      * @param udpClient
      */
     private static void computePerformance(UDPClient udpClient) {
-        Constants.UDP_STATS_LOGGER.info("---------PERFORMANCE ANALYSIS---------");
+        UDP_STATS_LOGGER.info("---------PERFORMANCE ANALYSIS---------");
 
         int i = 0;
         long getTotalTime = 0, putTotalTime = 0, delTotalTime = 0;

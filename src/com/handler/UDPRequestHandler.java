@@ -10,7 +10,7 @@ import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static com.uw.adc.rmi.util.Constants.UDP_SERVER_LOGGER;
+import static com.utility.UDPConstants.UDP_SERVER_LOGGER;
 
 public class UDPRequestHandler implements RequestHandler {
     private InetAddress clientAddr;

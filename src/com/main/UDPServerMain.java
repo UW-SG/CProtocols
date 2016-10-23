@@ -1,7 +1,7 @@
 package com.main;
 
 import com.server.UDPServer;
-import com.uw.adc.rmi.util.Constants;
+import com.utility.UDPConstants;
 
 class UDPServerMain {
     public static void main(String args[]) {
@@ -10,7 +10,7 @@ class UDPServerMain {
             udpServer.start();
 
         } catch (Exception e) {
-            Constants.UDP_SERVER_LOGGER.error(e);
+            UDPConstants.UDP_SERVER_LOGGER.error(e);
             throw new RuntimeException(e);
         }
     }
