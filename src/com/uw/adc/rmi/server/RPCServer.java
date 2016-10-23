@@ -85,7 +85,14 @@ public class RPCServer implements RPC {
         	serverLog.debug("Starting RPC Server");
         	
         	int port = 1099;
-        	if(args.length > 0)port = Integer.parseInt(args[0]);
+        	try{
+        		if(args.length > 0)port = Integer.parseInt(args[0]);
+        	}catch(NumberFormatException e)
+            {        	
+        		serverLog.error("RPCServer exception: " + e.getMessage()); 
+            	System.out.println("Invalid Port");
+            	throw e;
+            }
         	
         	RPCServer obj = new RPCServer();        	
             RPC stub = (RPC) UnicastRemoteObject.exportObject(obj, 0);
