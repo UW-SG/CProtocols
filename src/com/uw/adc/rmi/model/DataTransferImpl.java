@@ -4,20 +4,28 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 public class DataTransferImpl extends UnicastRemoteObject implements DataTransfer{	
-
-	public DataTransferImpl() throws RemoteException {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
+	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private String operation;
 	private String key;
 	private String value;
 	
+	public DataTransferImpl() throws RemoteException {
+		super();
+	}
+	
+	@Override
+	public String getOperation() throws RemoteException {
+		return operation;
+	}
+	@Override
+	public void setOperation(String operation) throws RemoteException {
+		this.operation = operation;
+	}
 	@Override
 	public String getKey() throws RemoteException {
 		return key;
@@ -38,6 +46,7 @@ public class DataTransferImpl extends UnicastRemoteObject implements DataTransfe
 	@Override
 	public String toString(){
 		return "Data ["
+				+ (operation != null ? "operation=" + key + ", " : "")
 				+ (key != null ? "key=" + key + ", " : "") 
 				+ (value != null ? "value=" + value : "") + "]";
 	}

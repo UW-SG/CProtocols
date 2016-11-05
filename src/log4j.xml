@@ -101,7 +101,7 @@
 	<!-- ROOT LOGGER -->
 	<root>
 		<priority value="debug" />				
-		<appender-ref ref="udpLog" />		
+		<appender-ref ref="rpcClientLog" />		
 		<appender-ref ref="default.console" />
 	</root>
 </log4j:configuration>
