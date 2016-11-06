@@ -1,22 +1,17 @@
 package com.uw.adc.rmi.server;
 
+import com.uw.adc.rmi.RPC;
+import com.uw.adc.rmi.model.DataTransfer;
+import com.uw.adc.rmi.util.Constants;
+import org.apache.log4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-import java.util.Random;
-
-import org.apache.log4j.Logger;
-
-import com.uw.adc.rmi.RPC;
-import com.uw.adc.rmi.model.DataTransfer;
-import com.uw.adc.rmi.util.Constants;
+import java.util.*;
 
 public class RPCServer implements RPC {
 
@@ -301,8 +296,8 @@ public class RPCServer implements RPC {
             	System.out.println("Invalid Port");
             	throw e;
             }
-        */	
-        	
+        */
+			obj.port = Integer.parseInt(args[0]);
             RPC stub = (RPC) UnicastRemoteObject.exportObject(obj, 0);
             Registry registry = LocateRegistry.createRegistry(obj.port);
         	//Registry registry = LocateRegistry.getRegistry();
