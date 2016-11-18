@@ -1,17 +1,26 @@
 package com.uw.adc.rmi.server;
 
-import com.uw.adc.rmi.RPC;
-import com.uw.adc.rmi.model.DataTransfer;
-import com.uw.adc.rmi.util.Constants;
-import org.apache.log4j.Logger;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+
+import org.apache.log4j.Logger;
+
+import com.uw.adc.rmi.RPC;
+import com.uw.adc.rmi.model.DataTransfer;
+import com.uw.adc.rmi.model.DataTransferImpl;
+import com.uw.adc.rmi.model.PaxosObject;
+import com.uw.adc.rmi.model.PaxosObjectImpl;
+import com.uw.adc.rmi.util.Constants;
 
 public class RPCServer implements RPC {
 
@@ -21,14 +30,18 @@ public class RPCServer implements RPC {
 	private HashMap<String, String> resource = new HashMap<String, String>();	
 	private HashMap<Integer, DataTransfer> pendingTasks = new HashMap<Integer, DataTransfer>();
 	
+	private static int seq = 0;
+	
 	private String server1Host;
 	private String server2Host;
 	private String server3Host;
 	private String server4Host;
+	private String server5Host;
 	private int server1Port;
 	private int server2Port;
 	private int server3Port;
 	private int server4Port;
+	private int server5Port;
 	
 	public RPCServer() throws RemoteException {
 		
@@ -53,25 +66,24 @@ public class RPCServer implements RPC {
 			server2Host = prop.getProperty("server2.host");
 			server3Host = prop.getProperty("server3.host");
 			server4Host = prop.getProperty("server4.host");
+			server5Host = prop.getProperty("server5.host");
 			server1Port = Integer.parseInt(prop.getProperty("server1.port"));
 			server2Port = Integer.parseInt(prop.getProperty("server2.port"));
 			server3Port = Integer.parseInt(prop.getProperty("server3.port"));
-			server4Port = Integer.parseInt(prop.getProperty("server4.port"));			
+			server4Port = Integer.parseInt(prop.getProperty("server4.port"));	
+			server5Port = Integer.parseInt(prop.getProperty("server5.port"));	
+			
+			seq = Integer.parseInt(prop.getProperty("current.sequence"));
 		}
 		catch(Exception e){
 			serverLog.error("Error in reading Prop file: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
+
 	
 	@Override
-	public String sayHello() throws RemoteException {
-		
-		return "Hello World";
-	}
-	
-	@Override
-	public DataTransfer getData(DataTransfer obj) throws RemoteException {
+	public DataTransfer getLocalData(DataTransfer obj) throws RemoteException {
 		
 		serverLog.debug("Request received:"+obj.toString());
 		if(obj.getKey()!=null){
@@ -85,7 +97,8 @@ public class RPCServer implements RPC {
 		return obj;
 	}
 	
-	@Override
+	
+	/*@Override
 	public boolean putData(DataTransfer obj) throws RemoteException {
 		
 		boolean response=false;
@@ -94,6 +107,7 @@ public class RPCServer implements RPC {
 		if(obj.getKey()!=null && obj.getValue() != null){
 			
 			obj.setOperation("PUT");
+			
 			List<Integer> sequenceList = publishMessage(obj);
 			boolean status = publishGo(sequenceList);
 			
@@ -101,6 +115,7 @@ public class RPCServer implements RPC {
 				resource.put(obj.getKey(), obj.getValue());
 				response = true;
 			}
+			
 		}
 		else{
 			serverLog.debug("Invalid Request: Missing Key/Value");
@@ -108,12 +123,54 @@ public class RPCServer implements RPC {
 		
 		serverLog.debug("Response Sent:"+response);		
 		return response;
-	}
+	}*/
+	
+	/* --------------------------  PAXOS STARTS ----------------------------------------------------------------*/
 	
 	@Override
+	public DataTransfer getData(DataTransfer obj) throws RemoteException {
+		
+		serverLog.debug("Request received:"+obj.toString());
+		if(obj.getKey()!=null){
+			obj = remoteGET(obj);					
+		}else{
+			serverLog.debug("Invalid Request: Missing Key");
+		}
+		serverLog.debug("Response Sent:"+obj.toString());
+				
+		return obj;
+	}
+	
+	
+	
+	@Override
+	public boolean putData(DataTransfer obj) throws RemoteException {
+		
+		boolean response = false;				
+		
+		serverLog.debug("Request received:"+obj.toString());
+		
+		if(obj.getKey()!=null && obj.getValue() != null){
+			
+			obj.setOperation("PUT");
+			
+			response = executePaxos(obj);
+		}
+		else{
+			serverLog.debug("Invalid Request: Missing Key/Value");
+		}
+		
+		serverLog.debug("Response Sent:"+response);		
+		
+		return response;
+	}
+	
+	
+	
+	/*@Override
 	public boolean deleteData(DataTransfer obj) throws RemoteException {
 		
-		boolean response=false;
+		boolean response=false;		
 		
 		serverLog.debug("Request received:"+obj.toString());
 		if(obj.getKey()!=null){
@@ -133,7 +190,406 @@ public class RPCServer implements RPC {
 		serverLog.debug("Response Sent:"+response);
 		
 		return response;
+	}*/
+	
+	@Override
+	public boolean deleteData(DataTransfer obj) throws RemoteException {
+		
+		boolean response=false;		
+		
+		serverLog.debug("Request received:"+obj.toString());
+		if(obj.getKey()!=null){
+			
+			obj.setOperation("DELETE");
+		
+			response = executePaxos(obj);
+		}
+		else{
+			serverLog.debug("Invalid Request: Missing Key");
+		}
+		serverLog.debug("Response Sent:"+response);
+		
+		return response;
 	}
+	
+	@Override
+	public boolean executePaxos(DataTransfer obj) throws RemoteException {
+		
+		PaxosObject proposeRequest = new PaxosObjectImpl();
+		boolean result = false;		
+		
+		seq = seq + 5;
+		proposeRequest.setSeqNum(seq);
+		proposeRequest.setDataObj(obj);
+		proposeRequest.setAcceptMsg(false);
+		System.out.println(obj.toString());
+		System.out.println(proposeRequest.getDataObj().toString());
+		
+		ArrayList<PaxosObject> proposalResultList = sendProposeMessages(proposeRequest);
+		
+		/*Testing-Start*/
+		/*DataTransfer obj1 = new DataTransferImpl();
+		obj1.setOperation("PUT");
+		obj1.setKey("XYZ");
+		obj1.setValue("101");
+		
+		
+		ArrayList<PaxosObject> proposalResultList  = new ArrayList<PaxosObject>();
+		PaxosObject resObj1 = new PaxosObjectImpl();
+			resObj1.setSeqNum(seq);
+			resObj1.setDataObj(obj);
+			resObj1.setAcceptMsg(false);
+			resObj1.setPromise(true);
+		proposalResultList.add(resObj1);
+		PaxosObject resObj2 = new PaxosObjectImpl();
+			resObj2.setSeqNum(seq);
+			resObj2.setDataObj(obj);
+			resObj2.setAcceptMsg(false);
+			resObj2.setPromise(true);			
+		proposalResultList.add(resObj2);
+		PaxosObject resObj3 = new PaxosObjectImpl();
+			resObj3.setSeqNum(seq);
+			resObj3.setDataObj(null);
+			resObj3.setAcceptMsg(false);
+			resObj3.setPromise(true);			
+		proposalResultList.add(resObj3);
+		PaxosObject resObj4 = new PaxosObjectImpl();
+			resObj4.setSeqNum(seq);
+			resObj4.setDataObj(null);
+			resObj4.setAcceptMsg(false);
+			resObj4.setPromise(true);
+		proposalResultList.add(resObj4);
+		PaxosObject resObj5 = new PaxosObjectImpl();
+			resObj5.setSeqNum(seq);
+			resObj5.setDataObj(null);
+			resObj5.setAcceptMsg(false);
+			resObj5.setPromise(true);
+		proposalResultList.add(resObj5);
+		System.out.println(((PaxosObject)proposalResultList.get(0)).getDataObj().toString());*/
+		/*Testing-End*/
+		
+		PaxosObject paxObj = new PaxosObjectImpl();
+		
+		boolean sendAccept = false; 
+					
+		if(proposalResultList !=null && proposalResultList.size()>= Constants.SERVER_MAJORITY){
+			
+						Map<DataTransfer, Integer> dataTransferMap = new HashMap<DataTransfer, Integer>();							
+						int countAccept = 0;
+						int maxCount = 0;
+						int maxUnacceptedSeq = 0;
+						DataTransfer maxDataTransfer = null;
+						
+						for(int i=0; i<=proposalResultList.size()-1; i++){
+							paxObj = (PaxosObject)proposalResultList.get(i);
+							System.out.println("paxObj hasPromised:"+paxObj.hasPromised());
+							//System.out.println("paxObj.getDataObj().getKey():"+paxObj.getDataObj().getKey());
+							
+							if(paxObj.hasPromised()) {
+
+								countAccept += 1;						
+							
+								if(paxObj.getDataObj() != null){
+										DataTransfer dataTransfer = paxObj.getDataObj();
+										int count;
+										if(dataTransferMap.containsKey(dataTransfer)){
+											count = dataTransferMap.get(dataTransfer);
+											dataTransferMap.put(dataTransfer, ++count);
+										}else{
+											dataTransferMap.put(dataTransfer, 1);
+											count = 1;
+										}
+										if(count > maxCount){
+											maxCount = count;
+											maxDataTransfer = dataTransfer;
+										}
+								}
+							}
+							else{
+								
+								if(paxObj.getSeqNum() > maxUnacceptedSeq)maxUnacceptedSeq = paxObj.getSeqNum(); 
+							}
+																						
+						}
+						
+						System.out.println("countAccept:"+countAccept);
+						System.out.println("maxCount:"+maxCount);
+						System.out.println("maxDataTransfer:"+maxDataTransfer.toString());
+						
+						if(countAccept >= Constants.SERVER_MAJORITY && maxCount >= Constants.SERVER_MAJORITY){
+							
+							sendAccept = true;												
+							//proposeRequest.setSeqNum(seq); //Not needed
+							proposeRequest.setAcceptMsg(true);
+							proposeRequest.setDataObj(maxDataTransfer);
+							System.out.println("maxDataTransfer:"+maxDataTransfer.toString());
+						}				
+						else{
+							if(maxUnacceptedSeq>seq)seq = maxUnacceptedSeq;
+							System.out.println("maxUnacceptedSeq:"+maxUnacceptedSeq);
+						}
+						
+		}
+		
+		if(sendAccept)				
+			//result = sendAcceptMessages(paxObj);
+		
+			/*Testing-Start*/
+			result = true;
+			/*Testing-End*/
+		else 
+			result = false;	
+		
+		return result;
+	}
+
+	
+	@Override
+	public ArrayList<PaxosObject> sendProposeMessages(PaxosObject proposeObj) throws RemoteException {
+		
+		ArrayList<PaxosObject> proposalResp = new ArrayList<PaxosObject>();		
+		
+		serverLog.debug("proposeMessage Message:"+proposeObj.toString());		
+	
+		try{
+			
+			
+			Registry registry1 = LocateRegistry.getRegistry(server1Host,server1Port);
+	        RPC stub1 = (RPC) registry1.lookup(Constants.RPC_SERVER);
+	        PaxosObject resObj1 = stub1.proposeTrans(proposeObj);
+	        if(resObj1!= null) proposalResp.add(resObj1);
+		}catch(Exception e){
+			serverLog.error("Error in Proposal phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}	
+		
+		try{
+			Registry registry2 = LocateRegistry.getRegistry(server2Host,server1Port);
+	        RPC stub2 = (RPC) registry2.lookup(Constants.RPC_SERVER);
+	        PaxosObject resObj2 = stub2.proposeTrans(proposeObj);
+	        if(resObj2 != null) proposalResp.add(resObj2);
+		}catch(Exception e){
+			serverLog.error("Error in Proposal phase : Server-" + server2Host + " Port-" + server2Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}	
+		
+		try{
+			Registry registry3 = LocateRegistry.getRegistry(server3Host,server3Port);
+	        RPC stub3 = (RPC) registry3.lookup(Constants.RPC_SERVER);
+	        PaxosObject resObj3 = stub3.proposeTrans(proposeObj);
+	        if(resObj3 != null) proposalResp.add(resObj3);
+		}catch(Exception e){
+			serverLog.error("Error in Proposal phase : Server-" + server3Host + " Port-" + server3Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+			Registry registry4 = LocateRegistry.getRegistry(server4Host,server4Port);
+	        RPC stub4 = (RPC) registry4.lookup(Constants.RPC_SERVER);
+	        PaxosObject resObj4 = stub4.proposeTrans(proposeObj);
+	        if(resObj4 != null) proposalResp.add(resObj4);
+		}catch(Exception e){
+			serverLog.error("Error in Proposal phase : Server-" + server4Host + " Port-" + server4Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+			Registry registry5 = LocateRegistry.getRegistry(server5Host,server5Port);
+	        RPC stub5 = (RPC) registry5.lookup(Constants.RPC_SERVER);
+	        PaxosObject resObj5 = stub5.proposeTrans(proposeObj);
+	        if(resObj5 != null) proposalResp.add(resObj5);
+		}catch(Exception e){
+			serverLog.error("Error in Proposal phase : Server-" + server5Host + " Port-" + server5Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+	        
+        serverLog.debug("Proposal phase over");
+        return proposalResp;		
+	}
+	
+	
+	public PaxosObject proposeTrans(PaxosObject reqObj) throws RemoteException {
+		
+		serverLog.debug("Propose msg:"+reqObj.toString());
+		PaxosObject obj = new PaxosObjectImpl();
+		
+		try{
+			
+			
+			/*  Accpetopr implements*/	
+		
+		}
+		
+		catch(Exception e){
+			serverLog.error("Error in Proposal phase : " + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		return obj;
+	}
+	
+	
+	@Override
+	public boolean sendAcceptMessages(PaxosObject acceptOject) throws RemoteException {
+		
+		serverLog.debug("Accept msg: "+acceptOject.toString());
+		
+		boolean acceptance = false;
+		List<RPC> stubList = new ArrayList<RPC>();
+		
+		try{						
+			Registry registry1 = LocateRegistry.getRegistry(server1Host,server1Port);
+	        RPC stub1 = (RPC) registry1.lookup(Constants.RPC_SERVER);		        
+	        stubList.add(stub1);
+		}catch(Exception e){
+			serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+	     
+		try{
+	        Registry registry2 = LocateRegistry.getRegistry(server2Host,server2Port);
+	        RPC stub2 = (RPC) registry2.lookup(Constants.RPC_SERVER);
+	        stubList.add(stub2);
+		}catch(Exception e){
+			serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+	        Registry registry3 = LocateRegistry.getRegistry(server3Host,server3Port);
+	        RPC stub3 = (RPC) registry3.lookup(Constants.RPC_SERVER);
+	        stubList.add(stub3);
+		}catch(Exception e){
+			serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+	        Registry registry4 = LocateRegistry.getRegistry(server4Host,server4Port);
+	        RPC stub4 = (RPC) registry4.lookup(Constants.RPC_SERVER);
+	        stubList.add(stub4);
+		}catch(Exception e){
+			serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}    
+		
+		try{
+	        Registry registry5 = LocateRegistry.getRegistry(server5Host,server5Port);
+	        RPC stub5 = (RPC) registry5.lookup(Constants.RPC_SERVER);
+	        stubList.add(stub5);	        
+		}catch(Exception e){
+			serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+	        for(int i=0; i<stubList.size(); i++){
+	        	
+	        	acceptance = acceptance || stubList.get(i).accept(acceptOject);
+	        	
+	        }		
+				
+		return acceptance;
+	}
+	
+	public boolean accept(PaxosObject reqObj) throws RemoteException {
+		
+		serverLog.debug("Acceptance msg:"+reqObj.toString());
+		PaxosObject obj = new PaxosObjectImpl();
+		boolean result = false;
+		try{
+			
+			
+			/*  Acceptor implements*/		
+		
+		}
+		
+		catch(Exception e){
+			serverLog.error("Error in Proposal phase : " + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		return result;
+	}
+	
+	
+	public DataTransfer remoteGET(DataTransfer getRequest){
+		
+	serverLog.debug("Call Get Method Remotely: "+getRequest.toString());
+	
+		DataTransfer response =  null; 
+			
+		
+		try{						
+			Registry registry1 = LocateRegistry.getRegistry(server1Host,server1Port);
+	        RPC stub1 = (RPC) registry1.lookup(Constants.RPC_SERVER);
+	        response = stub1.getLocalData(getRequest);
+	        
+	        if(response!=null && response.getValue()!=null)
+	        	return response;
+	        
+		}catch(Exception e){
+			serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+	     
+		try{
+	        Registry registry2 = LocateRegistry.getRegistry(server2Host,server2Port);
+	        RPC stub2 = (RPC) registry2.lookup(Constants.RPC_SERVER);
+	        response = stub2.getLocalData(getRequest);
+	        
+	        if(response!=null && response.getValue()!=null)
+	        	return response;
+	        
+		}catch(Exception e){
+			serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+	        Registry registry3 = LocateRegistry.getRegistry(server3Host,server3Port);
+	        RPC stub3 = (RPC) registry3.lookup(Constants.RPC_SERVER);
+	        response = stub3.getLocalData(getRequest);
+	        
+	        if(response!=null && response.getValue()!=null)
+	        	return response;
+	        
+		}catch(Exception e){
+			serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		try{
+	        Registry registry4 = LocateRegistry.getRegistry(server4Host,server4Port);
+	        RPC stub4 = (RPC) registry4.lookup(Constants.RPC_SERVER);
+	        response = stub4.getLocalData(getRequest);	        
+	        if(response!=null && response.getValue()!=null)
+	        	return response;
+	        
+		}catch(Exception e){
+			serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}    
+		
+		try{
+	        Registry registry5 = LocateRegistry.getRegistry(server5Host,server5Port);
+	        RPC stub5 = (RPC) registry5.lookup(Constants.RPC_SERVER);
+	        response = stub5.getLocalData(getRequest);
+	        
+	        if(response!=null && response.getValue()!=null)
+	        	return response;	        
+		}catch(Exception e){
+			serverLog.error("Error in in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage()); 
+			e.printStackTrace();
+		}
+		
+		return null;
+	
+	}
+	
+	/* -----------------------------------------   PAXOS ENDS ----------------------------------------------------------*/
+	
+	
+	/* -----------------------------------------TWO PHASE COMMIT STARTS -----------------------------------------------*/
 	
 	@Override
 	public List<Integer> publishMessage(DataTransfer obj) throws RemoteException {
@@ -214,6 +670,8 @@ public class RPCServer implements RPC {
 		serverLog.debug("Go publishing failed");				
 		return false;
 	}
+	
+	
 	
 	@Override
 	public int sendMessage(DataTransfer obj) throws RemoteException {
@@ -305,6 +763,10 @@ public class RPCServer implements RPC {
         	registry.bind(Constants.RPC_SERVER, stub);
         	
         	serverLog.debug("RPC Server started");
+        	
+        	
+        	Random randomGenerator = new Random();
+			int sequenceId = randomGenerator.nextInt(10000);    //random sequence number for the server
         } 
         catch (Exception e) 
         { 
@@ -312,5 +774,27 @@ public class RPCServer implements RPC {
             e.printStackTrace(); 
         } 
     }
+	
+	//For Testing purpose
+	/*public static void main(String args[]){
+	
+		try{
+			DataTransfer obj = new DataTransferImpl();
+			obj.setOperation("PUT");
+			obj.setKey("ABC");
+			obj.setValue("100");
+			
+			RPCServer server = new RPCServer();
+			System.out.println(server.putData(obj));
+		}
+		catch(Exception e){
+			serverLog.error("RPCServer error: " + e.getMessage()); 
+            e.printStackTrace();
+		}
+		
+	}*/
+	
+	/* TWO PHASE COMMIT ENDS */
+	
 
 }

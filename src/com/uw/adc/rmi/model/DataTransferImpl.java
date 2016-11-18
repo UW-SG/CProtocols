@@ -2,6 +2,7 @@ package com.uw.adc.rmi.model;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Comparator;
 
 public class DataTransferImpl extends UnicastRemoteObject implements DataTransfer{	
 	
@@ -46,8 +47,19 @@ public class DataTransferImpl extends UnicastRemoteObject implements DataTransfe
 	@Override
 	public String toString(){
 		return "Data ["
-				+ (operation != null ? "operation=" + key + ", " : "")
+				+ (operation != null ? "operation=" + operation + ", " : "")
 				+ (key != null ? "key=" + key + ", " : "") 
 				+ (value != null ? "value=" + value : "") + "]";
 	}
+
+	
+	@Override
+	public boolean equals(Object obj){
+		
+		DataTransfer dataTransfer = (DataTransfer) obj;
+		if(this.toString().equals(dataTransfer.toString())) return true;
+		
+		return false;
+	}
+	
 }
