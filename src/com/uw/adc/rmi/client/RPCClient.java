@@ -1,5 +1,12 @@
 package com.uw.adc.rmi.client;
 
+import com.uw.adc.rmi.RPC;
+import com.uw.adc.rmi.model.DataTransfer;
+import com.uw.adc.rmi.model.DataTransferImpl;
+import com.uw.adc.rmi.model.Stats;
+import com.uw.adc.rmi.util.Constants;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,14 +17,6 @@ import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import org.apache.log4j.Logger;
-
-import com.uw.adc.rmi.RPC;
-import com.uw.adc.rmi.model.DataTransfer;
-import com.uw.adc.rmi.model.DataTransferImpl;
-import com.uw.adc.rmi.model.Stats;
-import com.uw.adc.rmi.util.Constants;
 
 public class RPCClient {
 
@@ -76,8 +75,14 @@ public class RPCClient {
 			
 			Registry registry = LocateRegistry.getRegistry(host,port);
             RPC stub = (RPC) registry.lookup(Constants.RPC_SERVER);
+			DataTransfer obj = new DataTransferImpl();
+			obj.setOperation("PUT");
+			obj.setKey("ABC");
+			obj.setValue("100");
 
-			while ((currentLine = br.readLine()) != null) {
+			//RPCServer server = new RPCServer();
+			System.out.println(stub.putData(obj));
+			/*while ((currentLine = br.readLine()) != null) {
 				logger.debug(currentLine);
 				
 				String strArray[] = currentLine.split(",");
@@ -107,7 +112,8 @@ public class RPCClient {
 			}
 			
 			//Compute Performance
-			computePerformance();
+			computePerformance();*/
+
 
 		} catch (FileNotFoundException e) {
 			logger.error(e.getMessage());
