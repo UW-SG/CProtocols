@@ -94,17 +94,17 @@ public class RPCClient {
                     switch (strArray[0]) {
                         case "GET":
                             requestObj.setOperation("GET");
-                            //invokeRemoteGetMethod(stub, requestObj);
+                            invokeRemoteGetMethod(stub, requestObj);
                             break;
                         case "PUT":
                             requestObj.setOperation("PUT");
-                            //invokeRemotePutMethod(stub, requestObj);
-                            System.out.println(stub.putData(requestObj));
+                            invokeRemotePutMethod(stub, requestObj);
+                            //System.out.println(stub.putData(requestObj));
                             break;
                         case "DELETE":
                             requestObj.setOperation("DELETE");
-                            //invokeRemoteDeleteMethod(stub, requestObj);
-                            System.out.println(stub.deleteData(requestObj));
+                            invokeRemoteDeleteMethod(stub, requestObj);
+                            //System.out.println(stub.deleteData(requestObj));
                             break;
                         default:
                             logger.debug("Invalid Command");
@@ -146,9 +146,10 @@ public class RPCClient {
             if (request.getKey() != null) {
                 Date beforeDate = new Date();
                 DataTransfer response = stub.getData(request);
-                Date afterDate = new Date();
-                logger.debug("Response:" + response.toString());
-
+                Date afterDate = new Date();                
+                logger.debug("Response:"+response.getValue());
+                System.out.println("Response:"+response.getValue());
+                
                 long time = afterDate.getTime() - beforeDate.getTime();
                 Stats curentStats = new Stats("GET", time);
                 statsList.add(curentStats);
@@ -173,6 +174,7 @@ public class RPCClient {
                 boolean response = stub.putData(request);
                 Date afterDate = new Date();
                 logger.debug("Response:" + response);
+                System.out.println("Response:" + response);
 
                 long time = afterDate.getTime() - beforeDate.getTime();
                 Stats curentStats = new Stats("PUT", time);
@@ -198,6 +200,7 @@ public class RPCClient {
                 boolean response = stub.deleteData(request);
                 Date afterDate = new Date();
                 logger.debug("Response:" + response);
+                System.out.println("Response:" + response);
 
                 long time = afterDate.getTime() - beforeDate.getTime();
                 Stats curentStats = new Stats("DELETE", time);

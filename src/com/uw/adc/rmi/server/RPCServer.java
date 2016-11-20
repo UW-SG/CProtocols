@@ -1,19 +1,25 @@
 package com.uw.adc.rmi.server;
 
-import com.uw.adc.rmi.RPC;
-import com.uw.adc.rmi.model.DataTransfer;
-import com.uw.adc.rmi.model.PaxosObject;
-import com.uw.adc.rmi.model.PaxosObjectImpl;
-import com.uw.adc.rmi.util.Constants;
-import org.apache.log4j.Logger;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+
+import org.apache.log4j.Logger;
+
+import com.uw.adc.rmi.RPC;
+import com.uw.adc.rmi.model.DataTransfer;
+import com.uw.adc.rmi.model.PaxosObject;
+import com.uw.adc.rmi.model.PaxosObjectImpl;
+import com.uw.adc.rmi.util.Constants;
 
 public class RPCServer implements RPC {
 
@@ -53,6 +59,8 @@ public class RPCServer implements RPC {
             serverLog.debug("server3.port:" + prop.getProperty("server3.port"));
             serverLog.debug("server4.host:" + prop.getProperty("server4.host"));
             serverLog.debug("server4.port:" + prop.getProperty("server4.port"));
+            serverLog.debug("server5.host:" + prop.getProperty("server5.host"));
+            serverLog.debug("server5.port:" + prop.getProperty("server5.port"));
 
             port = Integer.parseInt(prop.getProperty("currentserver.port"));
             server1Host = prop.getProperty("server1.host");
@@ -272,8 +280,8 @@ public class RPCServer implements RPC {
             for (int i = 0; i <= proposalResultList.size() - 1; i++) {
                 paxObj = (PaxosObject) proposalResultList.get(i);
                 System.out.println("paxObj hasPromised:" + paxObj.hasPromised());
-                //System.out.println("paxObj.getDataObj().getKey():"+paxObj.getDataObj().getKey());
-
+                System.out.println("paxObj.getDataObj():"+paxObj.getDataObj().getOperation() + " "+ paxObj.getDataObj().getKey());                
+                
                 if (paxObj.hasPromised()) {
 
                     countAccept += 1;
@@ -352,7 +360,7 @@ public class RPCServer implements RPC {
         }
 
         try {
-            Registry registry2 = LocateRegistry.getRegistry(server2Host, server1Port);
+            Registry registry2 = LocateRegistry.getRegistry(server2Host, server2Port);
             RPC stub2 = (RPC) registry2.lookup(Constants.RPC_SERVER);
             PaxosObject resObj2 = stub2.proposeTrans(proposeObj);
             if (resObj2 != null) proposalResp.add(resObj2);
@@ -399,6 +407,7 @@ public class RPCServer implements RPC {
     public PaxosObject proposeTrans(PaxosObject reqObj) throws RemoteException {
 
         serverLog.debug("Propose msg:" + reqObj.toString());
+        System.out.println("Propose msg:" + reqObj.toString());
         PaxosObject obj = new PaxosObjectImpl();
         System.out.println("In acceptor phase prepare");
         try {
@@ -410,7 +419,7 @@ public class RPCServer implements RPC {
                     obj.setPromise(true);
                     obj.setSeqNum(reqObj.getSeqNum());
                     obj.setDataObj(reqObj.getDataObj());
-
+                    
 
                 } else {
                     Map.Entry<Integer, DataTransfer> entry = pendingTasks.entrySet().iterator().next();
@@ -430,7 +439,9 @@ public class RPCServer implements RPC {
                     }
                 }
             }
-            System.out.println("Accepted seq number: " + pendingTasks.toString());
+            System.out.println("Accepted seq number: " + pendingTasks.toString());            
+            System.out.println("obj.getDataObj():"+obj.getDataObj().getOperation() + " "+ obj.getDataObj().getKey());
+            
             return obj;
 			/*  Accpetopr implements*/
 
@@ -449,12 +460,12 @@ public class RPCServer implements RPC {
         serverLog.debug("Accept msg: " + acceptObject.toString());
 
         boolean acceptance = false;
-        List<RPC> stubList = new ArrayList<RPC>();
+        List<Boolean> acceptanceList = new ArrayList<Boolean>();
 
         try {
             Registry registry1 = LocateRegistry.getRegistry(server1Host, server1Port);
             RPC stub1 = (RPC) registry1.lookup(Constants.RPC_SERVER);
-            stubList.add(stub1);
+            acceptanceList.add(stub1.accept(acceptObject));
 
         } catch (Exception e) {
             serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
@@ -464,46 +475,46 @@ public class RPCServer implements RPC {
         try {
             Registry registry2 = LocateRegistry.getRegistry(server2Host, server2Port);
             RPC stub2 = (RPC) registry2.lookup(Constants.RPC_SERVER);
-            stubList.add(stub2);
+            acceptanceList.add(stub2.accept(acceptObject));
 
         } catch (Exception e) {
-            serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in Acceptance phase : Server-" + server2Host + " Port-" + server2Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
         try {
             Registry registry3 = LocateRegistry.getRegistry(server3Host, server3Port);
             RPC stub3 = (RPC) registry3.lookup(Constants.RPC_SERVER);
-            stubList.add(stub3);
+            acceptanceList.add(stub3.accept(acceptObject));
 
         } catch (Exception e) {
-            serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in Acceptance phase : Server-" + server3Host + " Port-" + server3Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
         try {
             Registry registry4 = LocateRegistry.getRegistry(server4Host, server4Port);
             RPC stub4 = (RPC) registry4.lookup(Constants.RPC_SERVER);
-            stubList.add(stub4);
+            acceptanceList.add(stub4.accept(acceptObject));
 
         } catch (Exception e) {
-            serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in Acceptance phase : Server-" + server4Host + " Port-" + server4Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
         try {
             Registry registry5 = LocateRegistry.getRegistry(server5Host, server5Port);
             RPC stub5 = (RPC) registry5.lookup(Constants.RPC_SERVER);
-            stubList.add(stub5);
+            acceptanceList.add(stub5.accept(acceptObject));
 
         } catch (Exception e) {
-            serverLog.error("Error in Acceptance phase : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in Acceptance phase : Server-" + server5Host + " Port-" + server5Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
-        for (int i = 0; i < stubList.size(); i++) {
+        for (int i = 0; i < acceptanceList.size(); i++) {
 
-            acceptance = acceptance || stubList.get(i).accept(acceptObject);
+            acceptance = acceptance || (boolean)acceptanceList.get(i);
 
         }
 
@@ -549,7 +560,7 @@ public class RPCServer implements RPC {
     }
 
 
-    public DataTransfer remoteGET(DataTransfer getRequest) {
+    public DataTransfer remoteGET(DataTransfer getRequest){
 
         serverLog.debug("Call Get Method Remotely: " + getRequest.toString());
 
@@ -578,7 +589,7 @@ public class RPCServer implements RPC {
                 return response;
 
         } catch (Exception e) {
-            serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in GET Method : Server-" + server2Host + " Port-" + server2Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
@@ -591,7 +602,7 @@ public class RPCServer implements RPC {
                 return response;
 
         } catch (Exception e) {
-            serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in GET Method : Server-" + server3Host + " Port-" + server3Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
@@ -603,7 +614,7 @@ public class RPCServer implements RPC {
                 return response;
 
         } catch (Exception e) {
-            serverLog.error("Error in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in GET Method : Server-" + server4Host + " Port-" + server4Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
@@ -615,11 +626,11 @@ public class RPCServer implements RPC {
             if (response != null && response.getValue() != null)
                 return response;
         } catch (Exception e) {
-            serverLog.error("Error in in GET Method : Server-" + server1Host + " Port-" + server1Port + "Error-" + e.getMessage());
+            serverLog.error("Error in in GET Method : Server-" + server5Host + " Port-" + server5Port + "Error-" + e.getMessage());
             e.printStackTrace();
         }
 
-        return null;
+        return getRequest;
 
     }
 	
